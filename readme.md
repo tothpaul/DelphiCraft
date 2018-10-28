@@ -1,6 +1,6 @@
 # Delphi Craft
 
-this is a Delphi translation of the C project by Micheal Fogleman
+this is a Delphi translation of the C project by Michael Fogleman
  
  https://www.michaelfogleman.com/projects/craft/
  

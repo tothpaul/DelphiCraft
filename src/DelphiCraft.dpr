@@ -1,7 +1,7 @@
 program DelphiCraft;
 
 {
-   Delphi Tokyo conversion of Craft by Micheal Fogleman
+   Delphi Tokyo conversion of Craft by Michael Fogleman
    https://www.michaelfogleman.com/projects/craft/
 
    (c)2017-2018 by Paul TOTH
