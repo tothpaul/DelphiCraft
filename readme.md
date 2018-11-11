@@ -17,4 +17,4 @@ it took me some time to identify two errors:
  note that Craft.Auth.pas do not implement the authentication against Michael's server, so you can only join it's server as a guest (I don't wont to bother him with my code).
 
  
- ![screenshot](DelphiCraf2.png)
+ ![screenshot](DelphiCraft2.png)
