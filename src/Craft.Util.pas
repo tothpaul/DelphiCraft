@@ -50,8 +50,6 @@ function char_width(input: AnsiChar): Integer;
 function string_width(input: PAnsiChar): Integer;
 function wrap(input: PAnsiChar; max_width: Integer; output: PansiChar; max_length: Integer): Integer;
 
-function Floor(float: Single): Integer;
-
 implementation
 
 uses Neslib.glfw3;
@@ -146,6 +144,7 @@ begin
   Result := -1;
 end;
 
+// Returns the length of the initial portion of str1 which consists only of characters that are part of str2.
 function strspn(str1, str2: PAnsiChar): Integer;
 begin
   Result := 0;
@@ -157,6 +156,8 @@ begin
   end;
 end;
 
+// Scans str1 for the first occurrence of any of the characters that are part of str2,
+// returning the number of characters of str1 read before this first occurrence.
 function strcspn(str1, str2: PAnsiChar): Integer;
 begin
   Result := 0;
@@ -334,7 +335,13 @@ const
         6, 6, 6, 6, 5, 6, 6, 6, 6, 6, 6, 4, 2, 5, 7, 0
     );
 begin
+  if Ord(Input) > 127 then
+  begin
+    WriteLn('char_width overflow for ', input);
+    Result := 0;
+  end else begin
   Result := lookup[Ord(input)];
+end;
 end;
 
 function string_width(input: PAnsiChar): Integer;
@@ -397,11 +404,5 @@ begin
     Result := line_number;
 end;
 
-function Floor(float: Single): Integer;
-begin
-  Result := Integer(Trunc(float));
-  if Frac(float) < 0 then
-    Dec(Result);
-end;
 
 end.

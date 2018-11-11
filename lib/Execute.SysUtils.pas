@@ -535,6 +535,20 @@ begin
   end;
 end;
 
+function FormatChar(var Buffer: PChar; const Value: TVarRec; Left: Boolean; Width, Prec: Integer; UCase: Boolean): Integer;
+begin
+  Result := 1;
+  if Buffer = nil then
+    Exit;
+  case Value.VType of
+    vtChar     : Buffer^ := Char(Value.VChar);
+    vtWideChar : Buffer^ := Value.VWideChar;
+  else
+    Buffer^ := '?';
+  end;
+  Inc(Buffer);
+end;
+
 function FormatStr(var Buffer: PChar; const Value: TVarRec; Left: Boolean; Width, Prec: Integer; UCase: Boolean): Integer;
 var
   Len: Integer;
@@ -543,7 +557,7 @@ begin
   Str := '';
   case Value.VType of
     vtPChar        : Len := PAnsiCharLen(Value.VPChar);
-    vtPWideChar    : Len := PWideCharLen(Value.VPWideChar);
+    vtPWideChar    : Len := PWideCharLen(Value.VPWideChar) * SizeOf(Char);
     vtString       : Len := Length(PShortString(Value.VAnsiString)^);
     vtWideString   : Len := Length(WideString(Value.VWideString));
     vtAnsiString   : Len := Length(AnsiString(Value.VAnsiString));
@@ -692,6 +706,8 @@ begin
          if Index < Length(Args) then
          begin
            case Fmt^ of
+             'c',
+             'C': Len := FormatChar(Buffer, Args[Index], Left, Width, Prec, Fmt^ = 'C');
              'd',
              'u': Len := FormatDecimal(Buffer, Args[Index], Left, Width, Prec, Fmt^ = 'd');
 //             'e':
@@ -867,6 +883,8 @@ var
 
   procedure FormatFloat(const Value: TVarRec; Prec: Integer);
   var
+    Ext: Extended;
+    Neg: Boolean;
     Int: Integer;
     Par: Integer;
     Mul: Integer;
@@ -877,15 +895,21 @@ var
       vtExtended:
       begin
 //        FloatToBufA(Value.VExtended^, Buffer, Prec
-        Int := Trunc(Value.VExtended^);
+        Ext := Value.VExtended^;
+        Neg := Ext < 0;
+        if Neg then
+          Ext := - Ext;
+        Int := Trunc(Ext);
         Mul := 1;
         for Cnt := 1 to Prec do
           Mul := 10 * Mul;
-        Par := Round((Value.VExtended^ - Int) * Mul);
+        Par := Round((Ext - Int) * Mul);
         Str := IntToStr(Par);
         while Length(Str) < Prec do
           Str := '0' + Str;
         Str := IntToStr(Int) + '.' + Str;
+        if Neg then
+          Str := '-' + Str;
         Cnt := Length(Str);
         if Cnt > Len then
           Cnt := Len;
@@ -1025,16 +1049,110 @@ begin
     Inc(source);
   end;
   Result := start <> source;
+  if Result then
+  begin
+    if neg then
+      target^ := - value
+    else
+      target^ := value;
+  end;
+end;
+
+function scanFloat(var source: PAnsiChar; target: PSingle): Boolean;
+var
+  start: PAnsiChar;
+  neg: Boolean;
+  value: Single;
+  decimal: Single;
+begin
+  scanBlanks(source);
+  neg := source^ = '-';
+  if neg then
+    Inc(source);
+  start := source;
+  value := 0;
+  while source^ in ['0'..'9'] do
+  begin
+    value := 10 * value + ord(source^) - ord('0');
+    Inc(source);
+  end;
+  if source^ = '.' then
+  begin
+    Inc(source);
+    decimal := 10;
+    while source^ in ['0'..'9'] do
+    begin
+      value := value + (ord(source^) - ord('0')) / decimal;
+      Inc(source);
+      decimal := 10 * decimal;
+    end;
+  end;
+  Result := start <> source;
+  if Result then
+  begin
+    if neg then
+      target^ := - value
+    else
+      target^ := value;
+  end;
+end;
+
+function scanDouble(var source: PAnsiChar; target: PDouble): Boolean;
+var
+  start: PAnsiChar;
+  neg: Boolean;
+  value: Double;
+  decimal: Double;
+begin
+  scanBlanks(source);
+  neg := source^ = '-';
+  if neg then
+    Inc(source);
+  start := source;
+  value := 0;
+  while source^ in ['0'..'9'] do
+  begin
+    value := 10 * value + ord(source^) - ord('0');
+    Inc(source);
+  end;
+  if source^ = '.' then
+  begin
+    Inc(source);
+    decimal := 10;
+    while source^ in ['0'..'9'] do
+    begin
+      value := value + (ord(source^) - ord('0')) / decimal;
+      Inc(source);
+      decimal := 10 * decimal;
+    end;
+  end;
+  Result := start <> source;
+  if Result then
+  begin
   if neg then
     target^ := - value
   else
     target^ := value;
+end;
 end;
 
 procedure scanStr(var source: PAnsiChar; target: PAnsiChar; size: Integer);
 begin
   scanBlanks(source);
   while (size <> 0) and (not (source^ in [#0, #9, #10, #13, ' '])) do
+  begin
+    target^ := source^;
+    Inc(source);
+    Inc(target);
+    Dec(size);
+  end;
+  target^ := #0;
+end;
+
+procedure scanLN(var source: PAnsiChar; target: PAnsiChar; size: Integer);
+begin
+  scanBlanks(source);
+  while (size <> 0) and (not (source^ in [#0, #10])) do
   begin
     target^ := source^;
     Inc(source);
@@ -1057,11 +1175,26 @@ begin
       #9, #10, #13,' ': Inc(format);
       '%':
       begin
+        Inc(format);
         fSize := getFormatSize(format);
         case format^ of
           'd': if not scanInt(buffer, PInteger(vars[pIndex])) then
                  Exit;
+          'f': if not scanFloat(buffer, PSingle(vars[pIndex])) then
+                 Exit;
+          'l': begin
+            Inc(format);
+            case format^ of
+              'f': if not scanDouble(buffer, PDouble(vars[pIndex])) then
+            end;
+          end;
           's': scanStr(buffer, PAnsiChar(vars[pIndex]), fSize);
+          '[': // Quick hack for DelphiCraft
+            if strcmp(format, '[^'#10']') = 0 then
+            begin
+              Inc(format, 3);
+              scanLN(buffer, PansiChar(vars[pIndex]), fSize);
+            end;
         end;
         Inc(format);
         Inc(pIndex);
@@ -1249,6 +1382,21 @@ begin
   end;
 end;
 
+procedure TestPrintf(const Fmt: PAnsiChar; const Args: array of const; const Value: AnsiString);
+var
+  bf: array[0..511] of AnsiChar;
+  st: AnsiString;
+begin
+  snprintf(bf, SizeOf(bf), Fmt, Args);
+  st := bf;
+  WriteLn('snprinf = ', st);
+  WriteLn('expected = ', value);
+  if st <> Value then
+  begin
+    WriteLn('*** ERROR *** ');
+  end;
+end;
+
 procedure test;
 var
   s1: PAnsiChar;
@@ -1317,6 +1465,12 @@ begin
   TestFormat('%-15s', [s1]);
   TestFormat('%.5s', [s1]);
   TestFormat('%-.5s', [s1]);
+
+  TestFormat('%.2f', [-0.14]);
+
+  TestPrintf('%.2f', [123.456], '123.46');
+  TestPrintf('%.2f', [-0.14], '-0.14');
+  TestPrintf('%.2f', [-123.456], '-123.46');
 
 end;
 {$ENDIF}

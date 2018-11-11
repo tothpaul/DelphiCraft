@@ -134,6 +134,10 @@
         <DCCReference Include="Craft.Client.pas"/>
         <DCCReference Include="Craft.Item.pas"/>
         <DCCReference Include="Craft.Ring.pas"/>
+        <DCCReference Include="Craft.Render.pas"/>
+        <DCCReference Include="Craft.Chunk.pas"/>
+        <DCCReference Include="Craft.Player.pas"/>
+        <DCCReference Include="Craft.Auth.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -186,7 +190,7 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="..\bin\Win32\Debug\DelphiCraft.exe" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="..\bin\DelphiCraft.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>DelphiCraft.exe</RemoteName>
                         <Overwrite>true</Overwrite>

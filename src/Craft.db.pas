@@ -10,6 +10,8 @@ uses
   Craft.Ring,
   MarcusGeelnard.TinyCThread;
 
+function db_create(path: PAnsiChar; var db: sqlite3): Integer;
+
 procedure db_enable();
 procedure db_disable();
 function get_db_enabled(): Boolean;
@@ -82,7 +84,7 @@ begin
     Result := db_enabled;
 end;
 
-function db_init(path: PAnsiChar): Integer;
+function db_create(path: PAnsiChar; var db: sqlite3): Integer;
 const
   create_query : PAnsiChar =
         'attach database ''auth.db'' as auth;'
@@ -135,6 +137,16 @@ const
       + 'create unique index if not exists key_pq_idx on key (p, q);'
       + 'create unique index if not exists sign_xyzface_idx on sign (x, y, z, face);'
       + 'create index if not exists sign_pq_idx on sign (p, q);';
+begin
+  Result := sqlite3_open(path, db);
+  if Result = 0 then
+  begin
+    Result := sqlite3_exec(db, create_query, nil, nil, nil);
+  end;
+end;
+
+function db_init(path: PAnsiChar): Integer;
+const
     insert_block_query : PAnsiChar =
         'insert or replace into block (p, q, x, y, z, w) '
       + 'values (?, ?, ?, ?, ?, ?);';
@@ -165,9 +177,7 @@ begin
     if (not db_enabled) then begin
         Exit(0);
     end;
-    rc := sqlite3_open(path, db);
-    if (rc <> 0) then Exit(rc);
-    rc := sqlite3_exec(db, create_query, nil, nil, nil);
+    rc := db_create(path, db);
     if (rc <> 0) then Exit(rc);
     rc := sqlite3_prepare_v2(
         db, insert_block_query, -1, insert_block_stmt, nil);

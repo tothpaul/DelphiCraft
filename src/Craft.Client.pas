@@ -64,8 +64,15 @@ var
   mutex: mtx_t;
 
 procedure client_enable();
+{$IFDEF MSWINDOWS}
+var
+  WSA: TWSAData;
+{$ENDIF}
 begin
     client_enabled := True;
+{$IFDEF MSWINDOWS}
+  WSAStartup($202, WSA);
+{$ENDIF}
 end;
 
 procedure client_disable();
@@ -87,12 +94,11 @@ begin
     end;
     count := 0;
     while (count < length) do begin
-        n := send(sd, data{ + count}, length, 0);
+        n := send(sd, data[count], length, 0);
         if (n = -1) then begin
             Exit(-1);
         end;
         Inc(count, n);
-        Inc(data, count);
         Dec(length, n);
         Inc(bytes_sent, n);
     end;
@@ -259,7 +265,7 @@ begin
     //char *data = malloc(sizeof(char) * RECV_SIZE);
     GetMem(data, RECV_SIZE);
     while (true) do begin
-        length := recv(sd, data, RECV_SIZE - 1, 0);
+        length := recv(sd, data[0], RECV_SIZE - 1, 0);
         if (length  <= 0) then begin
             if (running) then begin
                 //perror("recv");

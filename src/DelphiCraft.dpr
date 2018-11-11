@@ -32,7 +32,11 @@ uses
   Craft.db in 'Craft.db.pas',
   Craft.Client in 'Craft.Client.pas',
   Craft.Item in 'Craft.Item.pas',
-  Craft.Ring in 'Craft.Ring.pas';
+  Craft.Ring in 'Craft.Ring.pas',
+  Craft.Render in 'Craft.Render.pas',
+  Craft.Chunk in 'Craft.Chunk.pas',
+  Craft.Player in 'Craft.Player.pas',
+  Craft.Auth in 'Craft.Auth.pas';
 
 begin // main
   main();
