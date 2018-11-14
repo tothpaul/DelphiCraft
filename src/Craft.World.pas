@@ -36,8 +36,8 @@ begin
             z := q * CHUNK_SIZE + dz;
             f := simplex2( x * 0.01,  z * 0.01, 4, 0.5, 2);
             g := simplex2(-x * 0.01, -z * 0.01, 2, 0.9, 2);
-            mh := Round(g * 32) + 16;
-            h := Round(f * mh);
+            mh := Trunc(g * 32) + 16;
+            h := Trunc(f * mh);
             w := 1;
             t := 12;
             if (h <= t) then begin
@@ -56,7 +56,7 @@ begin
                     end;
                     // flowers
                     if (simplex2(x * 0.05, -z * 0.05, 4, 0.8, 2) > 0.7) then begin
-                        w := 18 + Round(simplex2(x * 0.1, z * 0.1, 4, 0.8, 2) * 7);
+                        w := 18 + Trunc(simplex2(x * 0.1, z * 0.1, 4, 0.8, 2) * 7);
                         func(x, h, z, w * flag, arg);
                     end;
                 end;
